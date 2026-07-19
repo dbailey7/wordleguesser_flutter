@@ -59,21 +59,35 @@ class WordleNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Finds the next position after `pos` that isn't already a confirmed Green
+  // tile — a Green clue is settled truth for the rest of the puzzle, so
+  // auto-advance shouldn't stop on one, and it must not be silently
+  // overwritten by a later Yellow (or replacement Green) entry.
+  int? _nextSelectablePosition(int pos) {
+    var next = pos + 1;
+    while (next <= wordLength && greenLetters.containsKey(next)) {
+      next++;
+    }
+    return next <= wordLength ? next : null;
+  }
+
   void onLetterPressed(String letter) {
     switch (activeInput) {
       case InputMode.green:
         final pos = selectedPosition;
         if (pos == null) return;
+        if (greenLetters.containsKey(pos)) return;
         greenLetters = {...greenLetters, pos: letter};
         yellowLetters = {...yellowLetters}..remove(pos);
-        selectedPosition = pos < wordLength ? pos + 1 : null;
+        selectedPosition = _nextSelectablePosition(pos);
         notifyListeners();
       case InputMode.yellow:
         final pos = selectedPosition;
         if (pos == null) return;
+        if (greenLetters.containsKey(pos)) return;
         yellowLetters = {...yellowLetters, pos: letter};
         greenLetters = {...greenLetters}..remove(pos);
-        selectedPosition = pos < wordLength ? pos + 1 : null;
+        selectedPosition = _nextSelectablePosition(pos);
         notifyListeners();
       case InputMode.black:
         blackLetters = {...blackLetters, letter};
