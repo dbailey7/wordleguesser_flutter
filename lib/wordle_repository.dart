@@ -40,7 +40,7 @@ class WordleRepository {
   Future<List<WordResult>> getGuesses({
     required int wordLength,
     required Map<int, String> greenLetters,
-    required Map<int, String> yellowLetters,
+    required Map<int, Set<String>> yellowLetters,
     required Set<String> blackLetters,
   }) async {
     final db = await _openDb();
@@ -57,12 +57,18 @@ class WordleRepository {
       args.add(entry.value.toLowerCase());
     }
 
+    // Each letter marked yellow at a position must appear in the word but
+    // NOT at that position — a position can have more than one such letter
+    // (different guesses can each rule out a different letter for the same
+    // spot).
     for (final entry in yellowLetters.entries) {
-      conditions.add('LOWER(SUBSTR(headword, ?, 1)) != ?');
-      args.add(entry.key);
-      args.add(entry.value.toLowerCase());
-      conditions.add('LOWER(headword) LIKE ?');
-      args.add('%${entry.value.toLowerCase()}%');
+      for (final letter in entry.value) {
+        conditions.add('LOWER(SUBSTR(headword, ?, 1)) != ?');
+        args.add(entry.key);
+        args.add(letter.toLowerCase());
+        conditions.add('LOWER(headword) LIKE ?');
+        args.add('%${letter.toLowerCase()}%');
+      }
     }
 
     for (final letter in blackLetters) {

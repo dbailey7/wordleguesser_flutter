@@ -9,7 +9,7 @@ class WordleNotifier extends ChangeNotifier {
 
   int wordLength = 5;
   Map<int, String> greenLetters = {};
-  Map<int, String> yellowLetters = {};
+  Map<int, Set<String>> yellowLetters = {};
   Set<String> blackLetters = {};
   InputMode activeInput = InputMode.none;
   int? selectedPosition;
@@ -21,7 +21,10 @@ class WordleNotifier extends ChangeNotifier {
   void loadTutorialExample() {
     wordLength = 5;
     greenLetters = {4: 'r'};
-    yellowLetters = {2: 't', 3: 'a'};
+    yellowLetters = {
+      2: {'t'},
+      3: {'a'},
+    };
     blackLetters = {'s', 'e'};
     activeInput = InputMode.none;
     selectedPosition = null;
@@ -85,7 +88,11 @@ class WordleNotifier extends ChangeNotifier {
         final pos = selectedPosition;
         if (pos == null) return;
         if (greenLetters.containsKey(pos)) return;
-        yellowLetters = {...yellowLetters, pos: letter};
+        final existing = yellowLetters[pos] ?? <String>{};
+        yellowLetters = {
+          ...yellowLetters,
+          pos: {...existing, letter},
+        };
         greenLetters = {...greenLetters}..remove(pos);
         selectedPosition = _nextSelectablePosition(pos);
         notifyListeners();

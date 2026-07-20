@@ -372,7 +372,7 @@ class _ModeButton extends StatelessWidget {
 class _PositionGrid extends StatelessWidget {
   final int wordLength;
   final Map<int, String> greenLetters;
-  final Map<int, String> yellowLetters;
+  final Map<int, Set<String>> yellowLetters;
   final int? selectedPosition;
   final ValueChanged<int> onSelect;
   final ValueChanged<int> onClear;
@@ -395,7 +395,7 @@ class _PositionGrid extends StatelessWidget {
           Expanded(child: _PositionTile(
             pos: pos,
             green: greenLetters[pos],
-            yellow: yellowLetters[pos],
+            yellow: yellowLetters[pos] ?? const {},
             selected: pos == selectedPosition,
             onSelect: onSelect,
             onClear: onClear,
@@ -409,7 +409,7 @@ class _PositionGrid extends StatelessWidget {
 class _PositionTile extends StatelessWidget {
   final int pos;
   final String? green;
-  final String? yellow;
+  final Set<String> yellow;
   final bool selected;
   final ValueChanged<int> onSelect;
   final ValueChanged<int> onClear;
@@ -425,11 +425,27 @@ class _PositionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final letter = green ?? yellow;
-    final bg = green != null ? wordleGreen : (yellow != null ? wordleYellow : tileNeutral);
+    final isOccupied = green != null || yellow.isNotEmpty;
+    final displayText = green != null
+        ? green!.toUpperCase()
+        : yellow.isNotEmpty
+            ? (yellow.toList()..sort()).map((l) => l.toUpperCase()).join(',')
+            : '$pos';
+    // Shrink the font as more yellow letters share one tile so they still fit.
+    final fontSize = green != null || yellow.length <= 1
+        ? 20.0
+        : yellow.length == 2
+            ? 15.0
+            : 12.0;
+    final bg = green != null ? wordleGreen : (yellow.isNotEmpty ? wordleYellow : tileNeutral);
 
     return GestureDetector(
-      onTap: () => letter != null ? onClear(pos) : onSelect(pos),
+      // Green is a single, settled value — tap clears it. A Yellow tile can
+      // hold more than one letter (each from a different guess), so tap
+      // re-selects it for adding another letter instead of wiping it;
+      // long-press clears it, mirroring the app's ❓ tap-vs-long-press pattern.
+      onTap: () => green != null ? onClear(pos) : onSelect(pos),
+      onLongPress: () => isOccupied ? onClear(pos) : null,
       child: AspectRatio(
         aspectRatio: 1,
         child: Container(
@@ -443,9 +459,9 @@ class _PositionTile extends StatelessWidget {
             ),
           ),
           child: Text(
-            letter?.toUpperCase() ?? '$pos',
-            style: const TextStyle(
-              fontSize: 20,
+            displayText,
+            style: TextStyle(
+              fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -513,7 +529,7 @@ const _kbRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 class _QwertyKeyboard extends StatelessWidget {
   final InputMode activeMode;
   final Map<int, String> greenLetters;
-  final Map<int, String> yellowLetters;
+  final Map<int, Set<String>> yellowLetters;
   final Set<String> blackLetters;
   final ValueChanged<String> onLetterPressed;
 
@@ -529,7 +545,7 @@ class _QwertyKeyboard extends StatelessWidget {
     if (!enabled) return tileNeutral;
     if (blackLetters.contains(letter)) return wordleDark;
     if (greenLetters.values.contains(letter)) return wordleGreen;
-    if (yellowLetters.values.contains(letter)) return wordleYellow;
+    if (yellowLetters.values.any((set) => set.contains(letter))) return wordleYellow;
     if (activeMode == InputMode.green) return wordleGreen.withValues(alpha: 0.55);
     if (activeMode == InputMode.yellow) return wordleYellow.withValues(alpha: 0.55);
     return tileNeutral;
