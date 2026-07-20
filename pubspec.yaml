@@ -1,4 +1,4 @@
-name: wordleguesser_flutter
+name: wordleguesser
 description: "Wordle Guesser — suggests best-guess words from your green/yellow/black clues."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

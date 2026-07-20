@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:wordleguesser_flutter/main.dart';
+import 'package:wordleguesser/main.dart';
 
 void main() {
   testWidgets('Onboarding shows on first run', (WidgetTester tester) async {
